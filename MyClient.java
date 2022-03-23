@@ -30,17 +30,18 @@ public class MyClient {
                 response = send("GETS Capable " + currentJob.cores + " " + currentJob.memory + " " + currentJob.disk,
                         dout, br);
                 numberOfServers = Integer.parseInt(response.split("\s")[1]);
-                response = send("OK", dout, br);
-                while(count < numberOfServers-1){
+                response = send("OK", dout, br); //to recieve all server data
+                response = send("OK", dout, br); //to recieve '.' at end
+                while(true){
                     String[] server = response.split("\s");
                     if(server.length>1){
                         currentServers.add(new Server(server[0], server[1], server[3], server[4], server[5], server[6]));
                     }
                     response = br.readLine();
-                    count++;
-                }
-                count = 0;
-                response = send("OK", dout, br);
+                    if(response.contains(".")){
+                        break;
+                    }
+                }                
                 chosenServer = currentServers.get(currentServers.size()-1);
                 currentServers.clear();
             } 
