@@ -37,7 +37,7 @@ public class MyClient {
                 // inner loop - store all server data
                 while(true){
                     String[] server = response.split("\s");
-                    if(server.length>1){
+                    if(server.length>1){ // ensure no more data message '.' is not attempted to be added
                         currentServers.add(new Server(server[0], server[1], server[3], server[4], server[5], server[6]));
                     }
                     response = br.readLine();
@@ -75,8 +75,9 @@ public class MyClient {
     }
 
     public static Server chooseServer(ArrayList<Server> servers){
-        // Given a list of all currently available servers 
-        // Will return first server with the most cores (LRR)
+        // INPUT: list of all servers which are capable and available for current job 
+        // OUTPUT: first of servers in list with the most cores
+        // implements 'Largest Round Robin' as once server has job scheduled, will not be in list until job completed
         Server server = new Server();
         for (Server s : servers) {
             if(s.cores>server.cores){
