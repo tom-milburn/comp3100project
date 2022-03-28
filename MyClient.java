@@ -13,7 +13,6 @@ public class MyClient {
         ArrayList<Server> currentServers = new ArrayList<Server>();
         Job currentJob = new Job();
         Server chosenServer = new Server();
-        int numberOfServers = 0, count = 0;
 
         response = send("HELO", dout, br);
         response = send("AUTH " + System.getProperty("user.name"), dout, br);
@@ -29,7 +28,6 @@ public class MyClient {
                         responseArray[5], responseArray[6]);
                 response = send("GETS Capable " + currentJob.cores + " " + currentJob.memory + " " + currentJob.disk,
                         dout, br);
-                numberOfServers = Integer.parseInt(response.split("\s")[1]);
                 response = send("OK", dout, br); //to recieve all server data
                 response = send("OK", dout, br); //to recieve '.' at end
                 while(true){
@@ -42,7 +40,7 @@ public class MyClient {
                         break;
                     }
                 }                
-                chosenServer = currentServers.get(currentServers.size()-1);
+                chosenServer = chooseServer(currentServers);
                 currentServers.clear();
             } 
             else if(response.contains(".")) {
@@ -68,5 +66,17 @@ public class MyClient {
         System.out.println("C: "+message);
         System.out.println("S: "+response);
         return response;
+    }
+
+    public static Server chooseServer(ArrayList<Server> servers){
+        // Given a list of all currently available servers 
+        // Will return first server with the most cores (LRR)
+        Server server = new Server();
+        for (Server s : servers) {
+            if(s.cores>server.cores){
+                server = s;
+            }
+        }
+        return server;
     }
 }
