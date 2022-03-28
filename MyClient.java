@@ -25,7 +25,9 @@ public class MyClient {
             if(response.contains("NONE")){ // no more jobs - quit
                 break;
             }
-            else if (response.contains("JOBN")) { // recieved new job - store and get servers
+
+            // recieved job - store job and get capable servers
+            else if (response.contains("JOBN") || response.contains("JOBP")) {
                 responseArray = response.split("\s");
                 currentJob = new Job(responseArray[1], responseArray[2], responseArray[3], responseArray[4],
                         responseArray[5], responseArray[6]);
@@ -44,15 +46,19 @@ public class MyClient {
                     if(response.contains(".")){
                         break;
                     }
-                }                
-                chosenServer = chooseServer(currentServers);
-                currentServers.clear();
-            } 
-            else if(response.contains(".")) { // no more to recieve - schedule job
+                }
+                chosenServer = chooseServer(currentServers); // choose server for current job 
+                currentServers.clear(); // server chosen - clear list for next job
+            }
+
+            // no more to recieve - schedule job
+            else if(response.contains(".")) { 
                 response = send("SCHD "+currentJob.id+" "+chosenServer.type+" "+chosenServer.id, dout, br);
                 response = send("REDY", dout, br);
-            } 
-            else if(response.contains("JCPL")){ //recieved completed job info
+            }
+
+            //recieved completed job or server status info - client still ready
+            else if(response.contains("JCPL") || response.contains("RESF") || response.contains("RESR")){
                 response = send("REDY", dout, br);
             }
             else break; // recieved unhandled message from server
