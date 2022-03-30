@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MyClient {
     public static void main(String args[]) throws IOException {
@@ -11,7 +12,8 @@ public class MyClient {
 
         String response = ""; //store incoming messages from server
         String[] responseArray = {}; // store split server response as components
-        ArrayList<Server> currentServers = new ArrayList<Server>(); //store current available servers
+        ArrayList<Server> allServers = new ArrayList<Server>(); //store current available servers
+        ArrayList<Server> largestServers = new ArrayList<Server>(); //store only largest servers
         Job currentJob = new Job(); //store current job
         Server chosenServer = new Server(); //store server selected for current job
 
@@ -31,24 +33,39 @@ public class MyClient {
                 responseArray = response.split("\s");
                 currentJob = new Job(responseArray[1], responseArray[2], responseArray[3], responseArray[4],
                         responseArray[5], responseArray[6]);
-                response = send("GETS Capable " + currentJob.cores + " " + currentJob.memory + " " + currentJob.disk,
-                        dout, br);
-                response = send("OK", dout, br); //to recieve all server data
-                response = send("OK", dout, br); //to recieve '.' at end
                 
-                // inner loop - store all server data
-                while(true){
-                    String[] server = response.split("\s");
-                    if(server.length>1){ // ensure no more data message '.' is not attempted to be added
-                        currentServers.add(new Server(server[0], server[1], server[3], server[4], server[5], server[6]));
+                if(allServers.isEmpty()){
+                    response = send("GETS All", dout, br);
+                    response = send("OK", dout, br); //to recieve all server data
+                    response = send("OK", dout, br); //to recieve '.' at end
+                
+                    // inner loop - store all server data
+                    while(true){
+                        String[] server = response.split("\s");
+                        if(server.length>1){ // ensure no more data message '.' is not attempted to be added
+                            allServers.add(new Server(server[0], server[1], server[3], server[4], server[5], server[6]));
+                        }
+                        response = br.readLine();
+                        if(response.contains(".")){
+                            break;
+                        }
                     }
-                    response = br.readLine();
-                    if(response.contains(".")){
-                        break;
+                    for (Server server : allServers) {
+                        if(largestServers.isEmpty()){
+                            largestServers.add(server);
+                        }
+                        else if(server.cores > largestServers.get(0).cores){
+                            largestServers.clear();
+                            largestServers.add(server);
+                        }
+                        else if(server.cores == largestServers.get(0).cores){
+                            largestServers.add(server);
+                        }
                     }
                 }
-                chosenServer = chooseServer(currentServers); // choose server for current job 
-                currentServers.clear(); // server chosen - clear list for next job
+                chosenServer = largestRoundRobin(currentJob, largestServers); // choose server for current job 
+                response = send("SCHD "+currentJob.id+" "+chosenServer.type+" "+chosenServer.id, dout, br);
+                response = send("REDY", dout, br);
             }
 
             // no more to recieve - schedule job
@@ -80,16 +97,8 @@ public class MyClient {
         return response;
     }
 
-    public static Server chooseServer(ArrayList<Server> servers){
-        // INPUT: list of all servers which are capable and available for current job 
-        // OUTPUT: first of servers in list with the most cores
-        // implements 'Largest Round Robin' as once server has job scheduled, will not be in list until job completed
-        Server server = new Server();
-        for (Server s : servers) {
-            if(s.cores>server.cores){
-                server = s;
-            }
-        }
-        return server;
+    public static Server largestRoundRobin(Job job, ArrayList<Server> servers){
+        // implements 'Largest Round Robin' by scheduling each job on the modulo of its id and the ammount of servers
+        return servers.get(job.id%servers.size());
     }
 }
