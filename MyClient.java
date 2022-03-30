@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.List;
 
 public class MyClient {
     public static void main(String args[]) throws IOException {
@@ -34,7 +33,8 @@ public class MyClient {
                 currentJob = new Job(responseArray[1], responseArray[2], responseArray[3], responseArray[4],
                         responseArray[5], responseArray[6]);
                 
-                if(allServers.isEmpty()){
+                // get all server data initially
+                if(allServers.isEmpty()){ 
                     response = send("GETS All", dout, br);
                     response = send("OK", dout, br); //to recieve all server data
                     response = send("OK", dout, br); //to recieve '.' at end
@@ -50,6 +50,8 @@ public class MyClient {
                             break;
                         }
                     }
+
+                    // get all largest servers for LRR
                     for (Server server : allServers) {
                         if(largestServers.isEmpty()){
                             largestServers.add(server);
@@ -63,13 +65,11 @@ public class MyClient {
                         }
                     }
                 }
-                chosenServer = largestRoundRobin(currentJob, largestServers); // choose server for current job 
-                response = send("SCHD "+currentJob.id+" "+chosenServer.type+" "+chosenServer.id, dout, br);
-                response = send("REDY", dout, br);
-            }
 
-            // no more to recieve - schedule job
-            else if(response.contains(".")) { 
+                // choose server for current job 
+                chosenServer = largestRoundRobin(currentJob, largestServers);
+
+                //schedule current job and get next job
                 response = send("SCHD "+currentJob.id+" "+chosenServer.type+" "+chosenServer.id, dout, br);
                 response = send("REDY", dout, br);
             }
