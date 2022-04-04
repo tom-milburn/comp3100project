@@ -15,6 +15,7 @@ public class MyClient {
         ArrayList<Server> largestServers = new ArrayList<Server>(); //store only largest servers
         Job currentJob = new Job(); //store current job
         Server chosenServer = new Server(); //store server selected for current job
+        int serverCount = 0; //number of servers - used for importing
 
         // hand-shaking 
         response = send("HELO", dout, br);
@@ -36,20 +37,23 @@ public class MyClient {
                 // get all server data initially
                 if(allServers.isEmpty()){ 
                     response = send("GETS All", dout, br);
+                    responseArray = response.split("\s");
+                    serverCount=Integer.parseInt(responseArray[1]);
                     response = send("OK", dout, br); //to recieve all server data
-                    response = send("OK", dout, br); //to recieve '.' at end
-                
-                    // inner loop - store all server data
+
                     while(true){
+                        serverCount--;
                         String[] server = response.split("\s");
                         if(server.length>1){ // ensure no more data message '.' is not attempted to be added
                             allServers.add(new Server(server[0], server[1], server[3], server[4], server[5], server[6]));
                         }
-                        response = br.readLine();
-                        if(response.contains(".")){
-                            break;
+                        if(serverCount>0){
+                            response = br.readLine();
                         }
+                        else break;
                     }
+                    
+                    response = send("OK", dout, br); //to recieve '.' at end
 
                     // get all largest servers for LRR
                     for (Server server : allServers) {
@@ -92,8 +96,8 @@ public class MyClient {
         // handles all sending messages to server and recieveing responces
         dout.write((message + "\n").getBytes());
         String response = br.readLine();
-        System.out.println("C: "+message);
-        System.out.println("S: "+response);
+        // System.out.println("C: "+message);
+        // System.out.println("S: "+response);
         return response;
     }
 
