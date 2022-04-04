@@ -64,7 +64,7 @@ public class MyClient {
                             largestServers.clear();
                             largestServers.add(server);
                         }
-                        else if(server.cores == largestServers.get(0).cores){
+                        else if(server.cores == largestServers.get(0).cores && server.type.equals(largestServers.get(0).type)){
                             largestServers.add(server);
                         }
                     }
@@ -96,8 +96,8 @@ public class MyClient {
         // handles all sending messages to server and recieveing responces
         dout.write((message + "\n").getBytes());
         String response = br.readLine();
-        // System.out.println("C: "+message);
-        // System.out.println("S: "+response);
+        System.out.println("C: "+message);
+        System.out.println("S: "+response);
         return response;
     }
 
