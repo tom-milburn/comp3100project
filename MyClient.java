@@ -60,8 +60,16 @@ public class MyClient {
                 response = send("REDY", dout, br);
             }
 
+            else if(response.contains("JCPL")){
+                responseArray = response.split("\s");
+                if(Integer.parseInt(send("EJWT " + responseArray[3] + " " + responseArray[4], dout, br)) == 0){
+                    response = send("TERM " + responseArray[3] + " "+ responseArray[4], dout, br);
+                }
+                response = send("REDY", dout, br);
+            }
+
             // recieved completed job or server status info - client still ready
-            else if (response.contains("JCPL") || response.contains("RESF") || response.contains("RESR")) {
+            else if (response.contains("RESF") || response.contains("RESR")) {
                 response = send("REDY", dout, br);
             } else
                 break; // recieved unhandled message from server
@@ -86,20 +94,23 @@ public class MyClient {
     public static Server selectServer(Job job, ArrayList<Server> servers, DataOutputStream dout, BufferedReader br) throws NumberFormatException, IOException {
         Server shortestWaitServer = new Server();
         int shortestWaitTime = -1;
-        ArrayList<Server> busyServers = new ArrayList<Server>();
-        for (Server s : servers) {
+
+        for(Server s: servers){
             if(s.status.equals("idle") || s.status.equals("inactive")){
                 return s;
             }
-            else busyServers.add(s);
         }
-        for (Server s : busyServers){
+        for (Server s : servers){
             int waitTime = Integer.parseInt(send("EJWT " + s.type + " " + s.id, dout, br));
+            if(waitTime == 0){
+                return s;
+            }
             if(shortestWaitTime == -1 || waitTime < shortestWaitTime){
                 shortestWaitTime = waitTime;
                 shortestWaitServer = s;
             }
         }
+
         return shortestWaitServer;
     }
 }
