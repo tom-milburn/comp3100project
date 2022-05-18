@@ -53,7 +53,7 @@ public class MyClient {
 
                 response = send("OK", dout, br); // to recieve '.' at end
 
-                chosenServer = selectServer(currentJob, capableServers);
+                chosenServer = selectServer(currentJob, capableServers, dout, br);
 
                 // schedule current job and get next job
                 response = send("SCHD " + currentJob.id + " " + chosenServer.type + " " + chosenServer.id, dout, br);
@@ -83,13 +83,23 @@ public class MyClient {
         return response;
     }
 
-    public static Server selectServer(Job job, ArrayList<Server> servers) {
-        //
+    public static Server selectServer(Job job, ArrayList<Server> servers, DataOutputStream dout, BufferedReader br) throws NumberFormatException, IOException {
+        Server shortestWaitServer = new Server();
+        int shortestWaitTime = -1;
+        ArrayList<Server> busyServers = new ArrayList<Server>();
         for (Server s : servers) {
             if(s.status.equals("idle") || s.status.equals("inactive")){
                 return s;
             }
+            else busyServers.add(s);
         }
-        return servers.get(0);
+        for (Server s : busyServers){
+            int waitTime = Integer.parseInt(send("EJWT " + s.type + " " + s.id, dout, br));
+            if(shortestWaitTime == -1 || waitTime < shortestWaitTime){
+                shortestWaitTime = waitTime;
+                shortestWaitServer = s;
+            }
+        }
+        return shortestWaitServer;
     }
 }
