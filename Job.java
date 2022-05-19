@@ -1,7 +1,7 @@
 public class Job {
     int submitTime, id, estRunTime, cores, memory, disk;
 
-    public Job(){ //default constructor
+    public Job() { // default constructor
         this.submitTime = -1;
         this.id = -1;
         this.estRunTime = -1;
@@ -10,7 +10,7 @@ public class Job {
         this.disk = -1;
     }
 
-    public Job(String submitTime, String id, String estRunTime, String cores, String memory, String disk){
+    public Job(String submitTime, String id, String estRunTime, String cores, String memory, String disk) {
         this.submitTime = Integer.parseInt(submitTime);
         this.id = Integer.parseInt(id);
         this.estRunTime = Integer.parseInt(estRunTime);

@@ -15,6 +15,8 @@ public class MyClient {
         Job currentJob = new Job(); // store current job
         Server chosenServer = new Server(); // store server selected for current job
         int serverCount = 0; // number of servers - used for importing
+        int totalServerCount = 0;
+        int totalCompletedJobs = 0;
 
         // hand-shaking
         response = send("HELO", dout, br);
@@ -36,6 +38,7 @@ public class MyClient {
                         dout, br);
                 responseArray = response.split("\s");
                 serverCount = Integer.parseInt(responseArray[1]);
+                totalServerCount = Integer.parseInt(responseArray[1]);
                 response = send("OK", dout, br); // to recieve all server data
 
                 capableServers.clear();
@@ -43,7 +46,8 @@ public class MyClient {
                     serverCount--;
                     String[] server = response.split("\s");
                     if (server.length > 1) { // ensure no more data message '.' is not attempted to be added
-                        capableServers.add(new Server(server[0], server[1], server[2], server[3], server[4], server[5], server[6]));
+                        capableServers.add(new Server(server[0], server[1], server[2], server[3], server[4], server[5],
+                                server[6]));
                     }
                     if (serverCount > 0) {
                         response = br.readLine();
@@ -60,11 +64,16 @@ public class MyClient {
                 response = send("REDY", dout, br);
             }
 
-            else if(response.contains("JCPL")){
+            else if (response.contains("JCPL")) {
+                totalCompletedJobs++;
                 responseArray = response.split("\s");
-                if(Integer.parseInt(send("EJWT " + responseArray[3] + " " + responseArray[4], dout, br)) == 0){
-                    response = send("TERM " + responseArray[3] + " "+ responseArray[4], dout, br);
+                //int runningJobs = Integer.parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4]+" 2", dout, br));
+                //int waitingJobs = Integer.parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4]+" 1", dout, br));
+                int serverJobsCompleted = Integer.parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4]+" 4", dout, br));
+                if (serverJobsCompleted < totalCompletedJobs/totalServerCount) {
+                    response = send("TERM " + responseArray[3] + " " + responseArray[4], dout, br);
                 }
+                
                 response = send("REDY", dout, br);
             }
 
@@ -91,21 +100,22 @@ public class MyClient {
         return response;
     }
 
-    public static Server selectServer(Job job, ArrayList<Server> servers, DataOutputStream dout, BufferedReader br) throws NumberFormatException, IOException {
+    public static Server selectServer(Job job, ArrayList<Server> servers, DataOutputStream dout, BufferedReader br)
+            throws NumberFormatException, IOException {
         Server shortestWaitServer = new Server();
         int shortestWaitTime = -1;
 
-        for(Server s: servers){
-            if(s.status.equals("idle") || s.status.equals("inactive")){
+        for (Server s : servers) {
+            if (s.status.equals("idle") || s.status.equals("inactive")) {
                 return s;
             }
         }
-        for (Server s : servers){
+        for (Server s : servers) {
             int waitTime = Integer.parseInt(send("EJWT " + s.type + " " + s.id, dout, br));
-            if(waitTime == 0){
+            if (waitTime == 0) {
                 return s;
             }
-            if(shortestWaitTime == -1 || waitTime < shortestWaitTime){
+            if (shortestWaitTime == -1 || waitTime < shortestWaitTime) {
                 shortestWaitTime = waitTime;
                 shortestWaitServer = s;
             }

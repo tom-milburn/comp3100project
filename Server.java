@@ -2,7 +2,7 @@ public class Server {
     String type, status;
     int id, limit, cores, memory, disk;
 
-    public Server(){
+    public Server() {
         type = "undefined";
         id = -1;
         status = "undefined";
@@ -12,7 +12,7 @@ public class Server {
         disk = -1;
     }
 
-    public Server(String type, String id, String status, String limit, String cores, String memory, String disk){
+    public Server(String type, String id, String status, String limit, String cores, String memory, String disk) {
         this.type = type;
         this.id = Integer.parseInt(id);
         this.status = status;
