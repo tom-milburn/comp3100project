@@ -110,6 +110,7 @@ public class MyClient {
             throws NumberFormatException, IOException {
         Server shortestWaitServer = new Server();
         Integer shortestWaitTime = null;
+        int serverRunningTime = 0;
 
         for (Server s : servers) {
             if (s.status.equals("inactive") || s.status.equals("idle")) {
@@ -118,6 +119,17 @@ public class MyClient {
         }
         for (Server s : servers) {
             int waitTime = Integer.parseInt(send("EJWT " + s.type + " " + s.id, dout, br));
+            if(Integer.parseInt(send("CNTJ " +s.type+ " " +s.id+ " 2", dout, br))!= 0){
+                int jobCount = Integer.parseInt(send("LSTJ "+s.type+" "+s.id, dout, br).split("\s")[1]);
+                String response = send("OK", dout, br);
+                while(jobCount>1){
+                    jobCount--;
+                    serverRunningTime=Integer.parseInt(response.split("\s")[4]);
+                    response = br.readLine();
+                }
+                send("OK", dout, br);
+                waitTime+=serverRunningTime;
+            }
             if (shortestWaitTime == null || waitTime < shortestWaitTime) {
                 shortestWaitTime = waitTime;
                 shortestWaitServer = s;
