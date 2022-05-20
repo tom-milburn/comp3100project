@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class MyClient {
     public static void main(String args[]) throws IOException {
@@ -15,8 +16,8 @@ public class MyClient {
         Job currentJob = new Job(); // store current job
         Server chosenServer = new Server(); // store server selected for current job
         int serverCount = 0; // number of servers - used for importing
-        int totalServerCount = 0;
-        int totalCompletedJobs = 0;
+        HashMap<String, Integer> numberServerType = new HashMap<String, Integer>();
+        double keepServerAmmount = 0.9; // determines percentage of servers should remain idle
 
         // hand-shaking
         response = send("HELO", dout, br);
@@ -25,7 +26,7 @@ public class MyClient {
 
         // main loop - schedule all jobs
         while (true) {
-            if (response.contains("NONE")) { // no more jobs - quit
+            if (response == null || response.contains("NONE")) { // no more jobs - quit
                 break;
             }
 
@@ -38,9 +39,7 @@ public class MyClient {
                         dout, br);
                 responseArray = response.split("\s");
                 serverCount = Integer.parseInt(responseArray[1]);
-                totalServerCount = Integer.parseInt(responseArray[1]);
                 response = send("OK", dout, br); // to recieve all server data
-
                 capableServers.clear();
                 while (true) { // loop for saving server data
                     serverCount--;
@@ -48,6 +47,11 @@ public class MyClient {
                     if (server.length > 1) { // ensure no more data message '.' is not attempted to be added
                         capableServers.add(new Server(server[0], server[1], server[2], server[3], server[4], server[5],
                                 server[6]));
+                        if (!numberServerType.containsKey(server[0])) {
+                            numberServerType.put(server[0], Integer.parseInt(server[1]));
+                        } else if (Integer.parseInt(server[1]) > numberServerType.get(server[0])) {
+                            numberServerType.put(server[0], Integer.parseInt(server[1]));
+                        }
                     }
                     if (serverCount > 0) {
                         response = br.readLine();
@@ -65,20 +69,22 @@ public class MyClient {
             }
 
             else if (response.contains("JCPL")) {
-                totalCompletedJobs++;
                 responseArray = response.split("\s");
-                //int runningJobs = Integer.parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4]+" 2", dout, br));
-                //int waitingJobs = Integer.parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4]+" 1", dout, br));
-                int serverJobsCompleted = Integer.parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4]+" 4", dout, br));
-                if (serverJobsCompleted < totalCompletedJobs/totalServerCount) {
-                    response = send("TERM " + responseArray[3] + " " + responseArray[4], dout, br);
+                int runningJobs = Integer
+                        .parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4] + " 2", dout, br));
+                int waitingJobs = Integer
+                        .parseInt(send("CNTJ " + responseArray[3] + " " + responseArray[4] + " 1", dout, br));
+                if (runningJobs == 0 && waitingJobs == 0) {
+                    if (Integer.parseInt(
+                            responseArray[4]) > (numberServerType.get(responseArray[3]) * keepServerAmmount)) {
+                        response = send("TERM " + responseArray[3] + " " + responseArray[4], dout, br);
+                    }
                 }
-                
                 response = send("REDY", dout, br);
             }
 
             // recieved completed job or server status info - client still ready
-            else if (response.contains("RESF") || response.contains("RESR")) {
+            else if (response.contains("OK") || response.contains("RESF") || response.contains("RESR")) {
                 response = send("REDY", dout, br);
             } else
                 break; // recieved unhandled message from server
@@ -103,24 +109,21 @@ public class MyClient {
     public static Server selectServer(Job job, ArrayList<Server> servers, DataOutputStream dout, BufferedReader br)
             throws NumberFormatException, IOException {
         Server shortestWaitServer = new Server();
-        int shortestWaitTime = -1;
+        Integer shortestWaitTime = null;
 
         for (Server s : servers) {
-            if (s.status.equals("idle") || s.status.equals("inactive")) {
+            if (s.status.equals("inactive") || s.status.equals("idle")) {
                 return s;
             }
         }
         for (Server s : servers) {
             int waitTime = Integer.parseInt(send("EJWT " + s.type + " " + s.id, dout, br));
-            if (waitTime == 0) {
-                return s;
-            }
-            if (shortestWaitTime == -1 || waitTime < shortestWaitTime) {
+            if (shortestWaitTime == null || waitTime < shortestWaitTime) {
                 shortestWaitTime = waitTime;
                 shortestWaitServer = s;
             }
         }
-
         return shortestWaitServer;
     }
+
 }
